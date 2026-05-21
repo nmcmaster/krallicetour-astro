@@ -14,7 +14,7 @@ body {
 }
 
 body {
-    background-image: url("/krallicetour_bg_long.webp");
+    background-image: url("/krallicetour_bg_current.webp");
     background-repeat: repeat-y;
     background-size: 100% auto;
     background-position: top center;
