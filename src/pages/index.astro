@@ -41,14 +41,14 @@ const dates = getTourDates();
               </div>
 
               {d.url ? (
-                <a
-                  href={d.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="inline-block border border-stone-300 px-3 md:px-5 py-2 text-[0.7rem] md:text-xs uppercase tracking-[0.2em] text-stone-100 hover:bg-stone-100 hover:text-black transition-colors"
-                >
-                  Tickets
-                </a>
+                <div class="relative inline-block">
+                  <span class="block border border-stone-700 px-3 md:px-5 py-2 text-[0.7rem] md:text-xs uppercase tracking-[0.2em] text-stone-500">
+                    Tickets
+                  </span>
+                  <span class="absolute -top-2 -right-2 bg-stone-100 text-black text-[0.55rem] md:text-[0.6rem] uppercase tracking-[0.1em] px-1.5 py-0.5 whitespace-nowrap">
+                    On sale May 26
+                  </span>
+                </div>
               ) : (
                 <span class="inline-block border border-stone-700 px-3 md:px-5 py-2 text-[0.7rem] md:text-xs uppercase tracking-[0.2em] text-stone-500">
                   Soon
