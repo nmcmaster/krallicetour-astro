@@ -1,0 +1,139 @@
+---
+---
+
+<div
+  id="loop-player"
+  class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 hidden"
+  aria-label="Audio loop player"
+>
+  <div class="flex items-center gap-1 bg-black/75 backdrop-blur-sm border border-stone-700 px-3 py-2 text-stone-200 shadow-lg">
+    <button
+      data-prev
+      aria-label="Previous track"
+      class="p-1.5 text-stone-400 hover:text-stone-100 transition-colors"
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <rect x="3" y="3" width="2" height="10"></rect>
+        <path d="M14 3v10l-8-5z"></path>
+      </svg>
+    </button>
+    <button
+      data-play
+      aria-label="Play"
+      class="p-1.5 text-stone-200 hover:text-stone-100 transition-colors"
+    >
+      <svg data-icon-play width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M4 2.5v11l9-5.5z"></path>
+      </svg>
+      <svg data-icon-pause width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" class="hidden">
+        <rect x="4" y="3" width="3" height="10"></rect>
+        <rect x="9" y="3" width="3" height="10"></rect>
+      </svg>
+    </button>
+    <button
+      data-next
+      aria-label="Next track"
+      class="p-1.5 text-stone-400 hover:text-stone-100 transition-colors"
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+        <path d="M2 3v10l8-5z"></path>
+        <rect x="11" y="3" width="2" height="10"></rect>
+      </svg>
+    </button>
+    <span
+      data-title
+      class="text-[0.65rem] uppercase tracking-[0.25em] text-stone-400 ml-2 mr-1 max-w-[10rem] md:max-w-[16rem] truncate"
+    ></span>
+  </div>
+  <audio data-audio loop preload="metadata"></audio>
+</div>
+
+<style>
+  .loop-pulse {
+    animation: loop-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes loop-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+  body.has-loop-player main {
+    padding-bottom: 5rem;
+  }
+</style>
+
+<script>
+  type Track = { title: string; file: string };
+
+  (async () => {
+    const root = document.getElementById('loop-player');
+    if (!root) return;
+
+    let tracks: Track[] = [];
+    try {
+      const res = await fetch('/loops/manifest.json', { cache: 'no-cache' });
+      if (!res.ok) return;
+      tracks = await res.json();
+    } catch {
+      return;
+    }
+    if (!Array.isArray(tracks) || tracks.length === 0) return;
+
+    const audio = root.querySelector('[data-audio]') as HTMLAudioElement;
+    const playBtn = root.querySelector('[data-play]') as HTMLButtonElement;
+    const prevBtn = root.querySelector('[data-prev]') as HTMLButtonElement;
+    const nextBtn = root.querySelector('[data-next]') as HTMLButtonElement;
+    const title = root.querySelector('[data-title]') as HTMLSpanElement;
+    const playIcon = playBtn.querySelector('[data-icon-play]') as SVGElement;
+    const pauseIcon = playBtn.querySelector('[data-icon-pause]') as SVGElement;
+
+    let idx = 0;
+    let engaged = false;
+
+    const load = (i: number) => {
+      idx = ((i % tracks.length) + tracks.length) % tracks.length;
+      audio.src = '/loops/' + tracks[idx].file;
+      title.textContent = tracks[idx].title;
+    };
+
+    const syncPlayIcon = () => {
+      const paused = audio.paused;
+      playIcon.classList.toggle('hidden', !paused);
+      pauseIcon.classList.toggle('hidden', paused);
+      playBtn.setAttribute('aria-label', paused ? 'Play' : 'Pause');
+    };
+
+    const engage = () => {
+      if (engaged) return;
+      engaged = true;
+      playBtn.classList.remove('loop-pulse');
+    };
+
+    playBtn.addEventListener('click', () => {
+      engage();
+      if (audio.paused) audio.play().catch(() => {});
+      else audio.pause();
+    });
+
+    prevBtn.addEventListener('click', () => {
+      engage();
+      const wasPlaying = !audio.paused;
+      load(idx - 1);
+      if (wasPlaying) audio.play().catch(() => {});
+    });
+
+    nextBtn.addEventListener('click', () => {
+      engage();
+      const wasPlaying = !audio.paused;
+      load(idx + 1);
+      if (wasPlaying) audio.play().catch(() => {});
+    });
+
+    audio.addEventListener('play', syncPlayIcon);
+    audio.addEventListener('pause', syncPlayIcon);
+
+    load(0);
+    playBtn.classList.add('loop-pulse');
+    document.body.classList.add('has-loop-player');
+    root.classList.remove('hidden');
+  })();
+</script>

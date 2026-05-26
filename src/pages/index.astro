@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import LoopPlayer from '../components/LoopPlayer.astro';
 import { getTourDates } from '../data/tour';
 
 const dates = getTourDates();
@@ -66,4 +67,5 @@ const dates = getTourDates();
       </footer>
     </main>
   </div>
+  <LoopPlayer />
 </BaseLayout>
