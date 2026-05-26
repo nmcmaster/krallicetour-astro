@@ -1,5 +1,5 @@
 // @ts-expect-error - vite ?raw import
-import csvRaw from '../../data/Krallice EU Tour 2026 ticket links - Sheet1.csv?raw';
+import csvRaw from '../../data/links.csv?raw';
 
 export type TourDate = {
   iso: string;
