@@ -40,15 +40,15 @@
         <rect x="11" y="3" width="2" height="10"></rect>
       </svg>
     </button>
-    <span
-      data-title
-      class="text-[0.65rem] uppercase tracking-[0.25em] text-stone-400 ml-2 mr-1 max-w-[10rem] md:max-w-[16rem] truncate"
-    ></span>
+    <div
+      data-title-window
+      class="text-[0.65rem] uppercase tracking-[0.25em] text-stone-400 ml-2 mr-1 max-w-[10rem] md:max-w-[16rem] overflow-hidden"
+    ></div>
   </div>
-  <audio data-audio loop preload="metadata"></audio>
+  <audio data-audio preload="metadata"></audio>
 </div>
 
-<style>
+<style is:global>
   .loop-pulse {
     animation: loop-pulse 1.6s ease-in-out infinite;
   }
@@ -58,6 +58,15 @@
   }
   body.has-loop-player main {
     padding-bottom: 5rem;
+  }
+
+  .title-segment {
+    white-space: nowrap;
+    display: inline-block;
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .loop-pulse { animation: none !important; }
   }
 </style>
 
@@ -82,17 +91,66 @@
     const playBtn = root.querySelector('[data-play]') as HTMLButtonElement;
     const prevBtn = root.querySelector('[data-prev]') as HTMLButtonElement;
     const nextBtn = root.querySelector('[data-next]') as HTMLButtonElement;
-    const title = root.querySelector('[data-title]') as HTMLSpanElement;
+    const titleWindow = root.querySelector('[data-title-window]') as HTMLDivElement;
     const playIcon = playBtn.querySelector('[data-icon-play]') as SVGElement;
     const pauseIcon = playBtn.querySelector('[data-icon-pause]') as SVGElement;
 
     let idx = 0;
     let engaged = false;
 
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const renderTitle = (text: string) => {
+      titleWindow.classList.remove('is-ticker');
+      titleWindow.innerHTML = '';
+      const seg = document.createElement('span');
+      seg.className = 'title-segment';
+      seg.textContent = text;
+      titleWindow.appendChild(seg);
+
+      if (reducedMotion) return;
+
+      requestAnimationFrame(() => {
+        const overflow = seg.scrollWidth - titleWindow.clientWidth;
+        if (overflow <= 1) return;
+
+        titleWindow.classList.add('is-ticker');
+
+        const speed = 20;
+        const pauseSec = 2;
+        const fadeSec = 0.4;
+        const snapSec = 0.05;
+        const sweepSec = overflow / speed;
+        const totalSec = pauseSec * 2 + sweepSec + fadeSec * 2 + snapSec;
+        const t1 = pauseSec / totalSec;
+        const t2 = (pauseSec + sweepSec) / totalSec;
+        const t3 = (pauseSec * 2 + sweepSec) / totalSec;
+        const t4 = (pauseSec * 2 + sweepSec + fadeSec) / totalSec;
+        const t5 = (pauseSec * 2 + sweepSec + fadeSec + snapSec) / totalSec;
+
+        seg.animate(
+          [
+            { transform: 'translateX(0)', opacity: 1, offset: 0 },
+            { transform: 'translateX(0)', opacity: 1, offset: t1 },
+            { transform: `translateX(-${overflow}px)`, opacity: 1, offset: t2 },
+            { transform: `translateX(-${overflow}px)`, opacity: 1, offset: t3 },
+            { transform: `translateX(-${overflow}px)`, opacity: 0, offset: t4 },
+            { transform: 'translateX(0)', opacity: 0, offset: t5 },
+            { transform: 'translateX(0)', opacity: 1, offset: 1 },
+          ],
+          {
+            duration: totalSec * 1000,
+            iterations: Infinity,
+            easing: 'ease-in-out',
+          },
+        );
+      });
+    };
+
     const load = (i: number) => {
       idx = ((i % tracks.length) + tracks.length) % tracks.length;
       audio.src = '/loops/' + tracks[idx].file;
-      title.textContent = tracks[idx].title;
+      renderTitle(tracks[idx].title);
     };
 
     const syncPlayIcon = () => {
@@ -130,6 +188,10 @@
 
     audio.addEventListener('play', syncPlayIcon);
     audio.addEventListener('pause', syncPlayIcon);
+    audio.addEventListener('ended', () => {
+      load(idx + 1);
+      audio.play().catch(() => {});
+    });
 
     load(0);
     playBtn.classList.add('loop-pulse');
